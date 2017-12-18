@@ -1,0 +1,66 @@
+---
+title: "Human Activity Recognition"
+author: "JacobaDS"
+date: "18 december 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, my goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+The goal of my project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set.
+
+###Load the data and remove missing values
+The data for this project come from this source: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har. 
+
+The training data for this project are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+
+```{r}
+Train <- read.csv("pml-training.csv", na.strings = c("NA", ""))
+#remove missing values, using the following subsetting:
+Train_use <- Train[, colSums(is.na(Train)) == 0] 
+```
+
+### Cross Validation
+1. Firstly, I split the Training data into a sub-training set (60%) and a sub-test set (remaining 40%)
+2. Secondly, I build the model on the sub-training set
+3. Thirdly, I evaluate my model on the sub-test set
+```{r}
+#Cross validation => create a sub-training set (60%) and a sub-test set (remaining 40%)
+library(caret)
+set.seed(1000)
+inTrain <- createDataPartition(Train_use$classe, times = 1, p=0.60, list=FALSE)
+Training <- Train_use[inTrain,]
+Testing <-Train_use[-inTrain,]
+```
+
+### Building the model (using the Training data)
+I choose a random forest algorithm, because this is one of the most used/accurate algorithms.
+I prefer randomForest(), because this algorithm runs much faster than train(classe ~ ., data = Training, method="rf"). 
+```{r}
+library(randomForest)
+rf <- randomForest(classe ~ ., data=Training)
+rf
+```
+
+### Expected out-of-sample error
+As can be seen from the output above, the in-sample-error rate = 0.01%. This is extremely small.
+I expect the out-of-sample error to be above 0.01% (=> above the in-sample-error rate, which is usually the case, but not necessarily).
+
+### Cross Validation: prediction on the Testing data
+Finally, I evaluate my model on the sub-test set.
+```{r}
+Pred_rf <- predict(rf,Testing)
+library(e1071)
+confusionMatrix(Testing$classe,Pred_rf)
+```
+
+The accuary is 1. In other words, the out-of-sample error rate = 0%.
+As can be seen in the Confusion Matrix, all predictions are exactly right.
